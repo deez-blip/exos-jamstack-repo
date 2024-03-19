@@ -1,20 +1,48 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { Player, PlayersResponse } from '~/models/player.model';
 import type { Competition, CompetitionsResponse } from '~/models/competition.model';
 
 const { find } = useStrapi();
 const selectedNationality = ref('');
 const selectedCompetition = ref('');
-const sortDirection = ref('ascending'); // Nouvelle référence pour le tri croissant par défaut
+const sortDirection = ref('ascending');
+const page = ref(1);
+const pageSize = ref(3);
 
-const { data: playersData, pending: playersPending, error: playersError } = await useAsyncData('players', async () => {
-    return await find<PlayersResponse>('players', { populate: '*' });
+// Réinitialiser la page à 1 chaque fois que l'ordre de tri change
+watch(sortDirection, () => {
+    page.value = 1;
 });
 
-const { data: competitionsData, pending: competitionsPending, error: competitionsError } = await useAsyncData('competitions', async () => {
-    return await find<CompetitionsResponse>('competitions');
-});
+const playersQueryParams = computed(() => ({
+    populate: '*',
+    pagination: {
+        page: page.value,
+        pageSize: pageSize.value
+    },
+    sort: sortDirection.value === 'ascending' ? 'ranking:asc' : 'ranking:desc',
+    filters: {
+        competitions: {
+            name: {
+                $in: selectedCompetition.value !== '' ? selectedCompetition.value : []
+            }
+        },
+        nationalite: {
+            $in: selectedNationality.value !== '' ? selectedNationality.value : []
+        }
+    }
+    // Vous pouvez inclure l'ordre de tri dans les paramètres si votre API le supporte
+}));
+
+const { data: playersData, pending: playersPending, error: playersError} = useAsyncData(
+    'players',
+    () => find<PlayersResponse>('players', playersQueryParams.value),
+    {
+        watch: [page, pageSize, selectedCompetition, selectedNationality, sortDirection]
+    }
+);
+
 
 // Computed property pour les joueurs filtrés et triés
 const sortedFilteredPlayers = computed(() => {
@@ -33,7 +61,7 @@ const sortedFilteredPlayers = computed(() => {
     } else if (sortDirection.value === 'descending') {
         players.sort((a, b) => b.ranking - a.ranking);
     }
-
+    // refreshPlayers()
     return players;
 });
 </script>
@@ -42,7 +70,7 @@ const sortedFilteredPlayers = computed(() => {
     <div class="container">
         <h1>Liste des Joueurs</h1>
         <!-- Debbuging -->
-        <pre>{{ playersData }}</pre>
+        <!-- <pre>{{ playersData }}</pre> -->
         <!-- <pre>{{ competitionsData }}</pre> -->
         <div class="filters">
             <!-- Nationality Filter -->
@@ -61,7 +89,8 @@ const sortedFilteredPlayers = computed(() => {
                 <label for="competitions-select">Compétitions :</label>
                 <select name="competition" id="competitions-select" v-model="selectedCompetition">
                     <option value="">--Please choose an option--</option>
-                    <option v-for="competition in competitionsData?.data" :key="competition.id" :value="competition.name">{{ competition.name }}</option>
+                    <option v-for="competition in competitionsData?.data" :key="competition.id"
+                        :value="competition.name">{{ competition.name }}</option>
                 </select>
             </div>
 
@@ -86,8 +115,8 @@ const sortedFilteredPlayers = computed(() => {
         <section v-else>
             <div class="player-list">
                 <div v-for="player in sortedFilteredPlayers" :key="player.id" class="player-card">
-                    <img :src="player.image.url"
-                        :alt="`Image de ${player.first_name} ${player.last_name}`" class="player-image" />
+                    <img :src="player.image.url" :alt="`Image de ${player.first_name} ${player.last_name}`"
+                        class="player-image" />
                     <div class="player-info">
                         <h2 class="player-name">
                             <a :href="`/players/${player.slug}`">
@@ -97,6 +126,7 @@ const sortedFilteredPlayers = computed(() => {
                         <p class="player-ranking">Classement: #{{ player.ranking }}</p>
                     </div>
                 </div>
+                <UPagination  v-if="playersData?.meta" v-model="page" :page-count="playersData?.meta.pagination.pageCount" :total="playersData?.meta.pagination.total" class="mx-auto mt-8" />
             </div>
         </section>
     </div>
@@ -108,6 +138,7 @@ a {
     text-decoration: none;
     font-weight: bold;
 }
+
 .container {
     width: 100%;
     max-width: 1200px;
@@ -145,16 +176,21 @@ a {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    height: 300px; /* Définit la hauteur de la carte du joueur */
-    display: flex; /* Utilisé pour aligner l'image et le contenu verticalement */
-    flex-direction: column; /* Empile l'image et le contenu verticalement */
+    height: 300px;
+    /* Définit la hauteur de la carte du joueur */
+    display: flex;
+    /* Utilisé pour aligner l'image et le contenu verticalement */
+    flex-direction: column;
+    /* Empile l'image et le contenu verticalement */
 }
 
 .player-image {
     width: 100%;
-    height: 200px; /* Définit la hauteur de l'image */
+    height: 200px;
+    /* Définit la hauteur de l'image */
     display: block;
-    object-fit: contain; /* Assure que l'image couvre bien l'espace défini sans être déformée */
+    object-fit: contain;
+    /* Assure que l'image couvre bien l'espace défini sans être déformée */
 }
 
 .player-info {
