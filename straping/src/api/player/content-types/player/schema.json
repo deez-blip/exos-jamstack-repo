@@ -14,7 +14,7 @@
   "attributes": {
     "first_name": {
       "type": "string",
-      "unique": true,
+      "unique": false,
       "required": true
     },
     "ranking": {
@@ -23,7 +23,7 @@
     "last_name": {
       "type": "string",
       "required": true,
-      "unique": true
+      "unique": false
     },
     "image": {
       "type": "media",
@@ -49,6 +49,10 @@
     "slug": {
       "type": "uid",
       "targetField": "full_name"
+    },
+    "nationalite": {
+      "type": "string",
+      "required": true
     }
   }
 }
