@@ -43,6 +43,10 @@ const { data: playersData, pending: playersPending, error: playersError} = useAs
     }
 );
 
+const { data: competitionsData, pending: competitionsPending, error: competitionsError } = await useAsyncData('competitions', async () => {
+    return await find<CompetitionsResponse>('competitions');
+});
+
 
 // Computed property pour les joueurs filtrés et triés
 const sortedFilteredPlayers = computed(() => {
