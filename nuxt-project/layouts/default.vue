@@ -6,9 +6,9 @@
             </nav>
         </header>
         <slot />
-        <footer class="site-footer">
+        <!-- <footer class="site-footer">
             The footer
-        </footer>
+        </footer> -->
     </main>
 </template>
 

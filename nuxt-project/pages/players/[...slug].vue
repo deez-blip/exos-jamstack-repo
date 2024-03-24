@@ -7,7 +7,6 @@ const route = useRoute()
 const { data, pending, error} = await useAsyncData('player', async() => {
     return await findOne<PlayerResponse>(`players/${route.params.slug}`)
 })
-
 </script>
 
 <template>
@@ -33,43 +32,44 @@ const { data, pending, error} = await useAsyncData('player', async() => {
 
 <style scoped>
 .player-profile {
-    max-width: 960px; /* Wider card */
-    margin: 50px auto; /* More vertical space and auto margins for horizontal centering */
+    max-width: 960px;
+    margin: 50px auto;
     padding: 40px;
-    background-color: #ffffff; /* Light background for the card */
+    background-color: #ffffff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center; /* Center text */
+    text-align: center;
 }
 
 .container {
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Center children vertically */
-    height: 100vh; /* Full height to allow centering */
-    background-color: #f0f0f0; /* Background color for the whole page */
-    padding-top: 100px; /* Space above the card */
+    justify-content: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    padding-top: 100px;
 }
 
-/* Adjust this to match the background where the card is placed */
 .player-profile, .player-info {
-    color: #333; /* Darker color for better readability */
+    color: #333;
 }
 
-/* Other styles */
 .player-image {
-    border: 5px solid #ffffff; /* Create a border around the image */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Shadow for depth */
+    width: 300px; /* Define a fixed width */
+    height: 300px; /* Define a fixed height */
+    border: 5px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    object-fit: contain; /* Cover will ensure the image covers the area, crop if necessary */
+    margin-bottom: 20px; /* Added margin for spacing */
 }
 
-/* Adjust font sizes as needed for readability */
 .player-name {
-    font-size: 2.5rem; /* Larger font size */
+    font-size: 2.5rem;
     margin-bottom: 20px;
 }
 
 .player-ranking, .player-nationality {
-    font-size: 1.5rem; /* Larger font size */
+    font-size: 1.5rem;
     margin-bottom: 10px;
 }
 
@@ -78,14 +78,13 @@ const { data, pending, error} = await useAsyncData('player', async() => {
     margin-bottom: 15px;
 }
 
-/* Style adjustments for competition list */
 .player-competitions ul {
     list-style-type: none;
     padding: 0;
 }
 
 .player-competitions li {
-    background-color: #e0e0e0; /* Slightly different background for contrast */
+    background-color: #e0e0e0;
     padding: 10px 15px;
     margin-bottom: 10px;
     border-radius: 5px;
