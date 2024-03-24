@@ -11,6 +11,83 @@ const { data, pending, error} = await useAsyncData('player', async() => {
 </script>
 
 <template>
-    <h1>Player single page</h1>
-    <pre>{{ data }}</pre>
+    <div class="player-profile">
+        <h1 class="player-name">{{ data.data.first_name }} {{ data.data.last_name }}</h1>
+        <div class="player-details">
+            <img :src="data.data.image.url" :alt="`${data.data.first_name} ${data.data.last_name}`" class="player-image" />
+            <div class="player-info">
+                <p class="player-ranking">Ranking: #{{ data.data.ranking }}</p>
+                <p class="player-nationality">Nationality: {{ data.data.nationalite }}</p>
+                <div class="player-competitions">
+                    <h2>Competitions</h2>
+                    <ul>
+                        <li v-for="competition in data.data.competitions" :key="competition.id">
+                            {{ competition.name }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
+
+<style scoped>
+.player-profile {
+    max-width: 960px; /* Wider card */
+    margin: 50px auto; /* More vertical space and auto margins for horizontal centering */
+    padding: 40px;
+    background-color: #ffffff; /* Light background for the card */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Center text */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center children vertically */
+    height: 100vh; /* Full height to allow centering */
+    background-color: #f0f0f0; /* Background color for the whole page */
+    padding-top: 100px; /* Space above the card */
+}
+
+/* Adjust this to match the background where the card is placed */
+.player-profile, .player-info {
+    color: #333; /* Darker color for better readability */
+}
+
+/* Other styles */
+.player-image {
+    border: 5px solid #ffffff; /* Create a border around the image */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Shadow for depth */
+}
+
+/* Adjust font sizes as needed for readability */
+.player-name {
+    font-size: 2.5rem; /* Larger font size */
+    margin-bottom: 20px;
+}
+
+.player-ranking, .player-nationality {
+    font-size: 1.5rem; /* Larger font size */
+    margin-bottom: 10px;
+}
+
+.player-competitions h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+/* Style adjustments for competition list */
+.player-competitions ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.player-competitions li {
+    background-color: #e0e0e0; /* Slightly different background for contrast */
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+</style>

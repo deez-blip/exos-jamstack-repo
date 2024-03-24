@@ -9,9 +9,15 @@ const selectedCompetition = ref('');
 const sortDirection = ref('ascending');
 const page = ref(1);
 const pageSize = ref(3);
+const searchQuery = ref('');
 
 // Réinitialiser la page à 1 chaque fois que l'ordre de tri change
 watch(sortDirection, () => {
+    page.value = 1;
+});
+
+// Réinitialiser la page à 1 chaque fois que la requête de recherche change
+watch(searchQuery, () => {
     page.value = 1;
 });
 
@@ -30,16 +36,21 @@ const playersQueryParams = computed(() => ({
         },
         nationalite: {
             $in: selectedNationality.value !== '' ? selectedNationality.value : []
-        }
+        },
+        ...(searchQuery.value && {
+            $or: [
+                { first_name: { $containsi: searchQuery.value } },
+                { last_name: { $containsi: searchQuery.value } }
+            ]
+        })
     }
-    // Vous pouvez inclure l'ordre de tri dans les paramètres si votre API le supporte
 }));
 
-const { data: playersData, pending: playersPending, error: playersError} = useAsyncData(
+const { data: playersData, pending: playersPending, error: playersError } = useAsyncData(
     'players',
     () => find<PlayersResponse>('players', playersQueryParams.value),
     {
-        watch: [page, pageSize, selectedCompetition, selectedNationality, sortDirection]
+        watch: [page, pageSize, selectedCompetition, selectedNationality, sortDirection, searchQuery]
     }
 );
 
@@ -47,6 +58,11 @@ const { data: competitionsData, pending: competitionsPending, error: competition
     return await find<CompetitionsResponse>('competitions');
 });
 
+// Calculer le nombre de pages
+const pageCount = computed(() => {
+    const totalItems = playersData.value?.meta.pagination.total || 0;
+    return Math.ceil(totalItems / pageSize.value);
+});
 
 // Computed property pour les joueurs filtrés et triés
 const sortedFilteredPlayers = computed(() => {
@@ -57,7 +73,8 @@ const sortedFilteredPlayers = computed(() => {
     let players = playersData.value.data.filter((player: Player) => {
         const matchesNationality = player.nationalite === selectedNationality.value || selectedNationality.value === '';
         const matchesCompetition = player.competitions.some(competition => competition.name === selectedCompetition.value) || selectedCompetition.value === '';
-        return matchesNationality && matchesCompetition;
+        const matchesSearchQuery = player.first_name.toLowerCase().includes(searchQuery.value.toLowerCase()) || player.last_name.toLowerCase().includes(searchQuery.value.toLowerCase());
+        return matchesNationality && matchesCompetition && matchesSearchQuery;
     });
 
     if (sortDirection.value === 'ascending') {
@@ -65,9 +82,10 @@ const sortedFilteredPlayers = computed(() => {
     } else if (sortDirection.value === 'descending') {
         players.sort((a, b) => b.ranking - a.ranking);
     }
-    // refreshPlayers()
+
     return players;
 });
+
 </script>
 
 <template>
@@ -106,6 +124,11 @@ const sortedFilteredPlayers = computed(() => {
                     <option value="descending">Décroissant</option>
                 </select>
             </div>
+
+            <div class="filter">
+                <label for="search-input">Chercher un joueur :</label>
+                <input type="text" id="search-input" v-model="searchQuery" placeholder="Entrez le nom du joueur">
+            </div>
         </div>
 
         <section v-if="playersPending || competitionsPending">
@@ -130,7 +153,10 @@ const sortedFilteredPlayers = computed(() => {
                         <p class="player-ranking">Classement: #{{ player.ranking }}</p>
                     </div>
                 </div>
-                <UPagination  v-if="playersData?.meta" v-model="page" :page-count="playersData?.meta.pagination.pageCount" :total="playersData?.meta.pagination.total" class="mx-auto mt-8" />
+            </div>
+            <div class="pagination-container">
+                <UPagination v-if="playersData?.meta" v-model="page" :page-count="pageCount"
+                    :total="playersData?.meta.pagination.total" class="mx-auto mt-8" />
             </div>
         </section>
     </div>
@@ -138,34 +164,62 @@ const sortedFilteredPlayers = computed(() => {
 
 <style scoped>
 a {
-    color: black;
+    color: #006064;
     text-decoration: none;
     font-weight: bold;
+}
+
+h1 {
+    color: black;
 }
 
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    background-color: transparent;
     padding: 20px;
+    background-color: #f0f0f0;
 }
 
 .filters {
     display: flex;
+    flex-wrap: wrap;
     gap: 20px;
     margin-bottom: 20px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filters,
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Centre la pagination */
+.pagination-container {
+    justify-content: center;
+    /* Centre les enfants de .pagination-container */
 }
 
 .filter label {
     display: block;
     margin-bottom: 5px;
+    color: #333;
 }
 
-.filter select {
+.filter select,
+.filter input {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .player-list {
@@ -176,25 +230,29 @@ a {
 
 .player-card {
     width: calc(33.333% - 20px);
+    background-color: #ffffff;
+
     border: 1px solid #ddd;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    height: 300px;
-    /* Définit la hauteur de la carte du joueur */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
-    /* Utilisé pour aligner l'image et le contenu verticalement */
     flex-direction: column;
-    /* Empile l'image et le contenu verticalement */
+    transition: transform 0.2s ease-in-out;
+
+}
+
+.player-card:hover {
+    transform: translateY(-5px);
+
 }
 
 .player-image {
     width: 100%;
     height: 200px;
-    /* Définit la hauteur de l'image */
     display: block;
     object-fit: contain;
-    /* Assure que l'image couvre bien l'espace défini sans être déformée */
+
 }
 
 .player-info {
@@ -209,6 +267,7 @@ a {
 
 .player-ranking {
     font-size: 16px;
-    color: #555;
+    color: #00838f;
+
 }
 </style>
